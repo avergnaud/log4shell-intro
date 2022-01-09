@@ -1,4 +1,4 @@
-package org.example;
+package intro;
 
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;

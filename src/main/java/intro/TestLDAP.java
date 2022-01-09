@@ -1,4 +1,4 @@
-package org.example;
+package intro;
 
 import java.util.Hashtable;
 import javax.naming.Context;

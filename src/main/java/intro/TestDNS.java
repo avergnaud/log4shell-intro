@@ -1,4 +1,4 @@
-package org.example;
+package intro;
 
 import javax.naming.*;
 import javax.naming.directory.*;

