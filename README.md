@@ -51,6 +51,8 @@ JNDI est inclus dans le JDK, mais pas forcément toutes les implémentations de 
 
 Le pilote LDAP est inclus.
 
+![JNDI API](doc/jndi_api.drawio.png?raw=true)
+
 # LDAP
 
 LDAP, acronyme de Lightweight Directory Access Protocol, est un protocole de communication vers un annuaire en utilisant TCP/IP. Il est une simplification du protocole X 500 (d'où le L de Lightweight).
