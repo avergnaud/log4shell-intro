@@ -6,7 +6,7 @@ import java.util.*;
 
 public class TestDNS {
 
-    com.sun.jndi.dns.DnsContextFactory a;
+    //com.sun.jndi.dns.DnsContextFactory a;
 
     public static void main(String[] args) {
         try {

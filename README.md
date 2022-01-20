@@ -23,6 +23,23 @@
     - [Préparation : le listener ncat](#préparation--le-listener-ncat-1)
     - [Exécution : appel à solr](#exécution--appel-à-solr-1)
 
+# Log4Shell
+
+Log4Shell est une vulnérabilité qui affecte la librairie Java Log4j2.
+Cette vulnérabilité est divulguée à Apache par l'équipe de sécurité cloud d'Alibaba le 24 novembre 2021 et publiée le 9 décembre 2021.
+
+Plus précisément, les versions de log4j2 vulnérables sont les :
+< 2.3.2 (pour Java 6),
+< 2.12.4 (pour Java 7),
+< 2.17.1 (pour Java 8+).
+
+La vulnérabilité tire parti du fait que Log4j2 permet de faire des reqûete JNDI/LDAP.
+Cela permet à un attaquant d'exécuter du code Java arbitraire sur un serveur.
+(remote code execution - RCE)
+Toute application web Java qui utilise log4j2 est potentiellement vulnérable.
+
+![FW logs](doc/FW_logs_log4shell.PNG?raw=true)
+
 # JNDI
 
 [https://www.jmdoudoux.fr/java/dej/chap-jndi.htm](https://www.jmdoudoux.fr/java/dej/chap-jndi.htm)
